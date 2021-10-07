@@ -1,5 +1,13 @@
 {
-  "cSpell.words": ["cloc", "makefiles", "mkpm", "nixpkgs", "stdenv"],
+  "cSpell.words": [
+    "cloc",
+    "gnumake",
+    "gnused",
+    "makefiles",
+    "mkpm",
+    "nixpkgs",
+    "stdenv"
+  ],
   "psi-header.variables": [["projectCreationYear", "2021"]],
   "psi-header.config": {
     "blankLinesAfter": 1,

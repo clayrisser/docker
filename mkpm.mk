@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 17:01:16
+# Last Modified: 07-10-2021 17:20:10
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -33,8 +33,10 @@ MKPM_PKG_SOURCE := https://gitlab.com/bitspur/community/mkgnu.git
 MKPM_PKG_FILES_REGEX :=
 
 MKPM_PACKAGES := \
+	gnu=0.0.1
 
 MKPM_REPOS := \
+	https://gitlab.com/bitspur/community/mkpm-stable.git
 
 ############# MKPM BOOTSTRAP SCRIPT BEGIN #############
 MKPM_BOOTSTRAP := https://bitspur.gitlab.io/community/mkpm/bootstrap.mk

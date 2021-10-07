@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 17:13:41
+# Last Modified: 07-10-2021 18:03:44
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -20,20 +20,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+export CONTEXT ?= .
+CONTEXT := $(abspath $(CONTEXT))
+export REGISTRY ?=
 export TAG ?= latest
 export VERSION ?= 0.0.1
-export CONTEXT ?= .
-export CONTAINER_NAME ?= $(shell $(ECHO) $(NAME) | $(SED) "s|[\/-]|_|g")
-export MAJOR := $(shell $(ECHO) $(VERSION) | $(CUT) -d. -f1)
-export MINOR := $(shell $(ECHO) $(VERSION) | $(CUT) -d. -f2)
-export PATCH := $(shell $(ECHO) $(VERSION) | $(CUT) -d. -f3)
+export DOCKERFILE ?= $(CURDIR)/Dockerfile
+ifeq (,$(REGISTRY))
+	export IMAGE := $(NAME)
+else
+	export IMAGE := $(REGISTRY)/$(NAME)
+endif
+export CONTAINER_NAME ?= $(shell echo $(NAME) | $(SED) "s|[\/-]|_|g" $(NOFAIL))
+export MAJOR := $(shell echo $(VERSION) | $(CUT) -d. -f1 $(NOFAIL))
+export MINOR := $(shell echo $(VERSION) | $(CUT) -d. -f2 $(NOFAIL))
+export PATCH := $(shell echo $(VERSION) | $(CUT) -d. -f3 $(NOFAIL))
 
 DOCKER_COMPOSE ?= docker-compose
 DOCKER ?= docker
 
+DOCKER_TMP := $(MKPM_TMP)/docker
+
 .PHONY: build
-build: $(CONTEXT)/.dockerignore
-	@$(DOCKER_COMPOSE) -f docker-build.yaml build $(ARGS) main
+build: $(DOCKER_TMP)/docker-build.yaml $(CONTEXT)/.dockerignore
+	@$(DOCKER_COMPOSE) -f $< build $(ARGS) main
 	@$(MAKE) -s tag
 
 .PHONY: tag
@@ -42,16 +52,23 @@ tag:
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
 
+.PHONY: tags
+tags:
+	@echo ${IMAGE}:${TAG}
+	@echo ${IMAGE}:${MAJOR}
+	@echo ${IMAGE}:${MAJOR}.${MINOR}
+	@echo ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
+
 .PHONY: pull
-pull:
-	@$(DOCKER_COMPOSE) -f docker-build.yaml pull $(ARGS)
+pull: $(DOCKER_TMP)/docker-build.yaml
+	@$(DOCKER_COMPOSE) -f $< pull $(ARGS)
 
 .PHONY: push
-push:
-	@$(DOCKER_COMPOSE) -f docker-build.yaml push $(ARGS)
+push: $(DOCKER_TMP)/docker-build.yaml
+	@$(DOCKER_COMPOSE) -f $< push $(ARGS)
 
-.PHONY: ssh
-ssh:
+.PHONY: shell
+shell:
 	@($(DOCKER) ps | $(GREP) -E "$(NAME)$$" $(NOOUT)) && \
 		$(DOCKER) exec -it $(NAME) /bin/sh || \
 		$(DOCKER) run --rm -it --entrypoint /bin/sh $(IMAGE):$(TAG)
@@ -63,6 +80,10 @@ logs:
 .PHONY: up
 up:
 	@$(DOCKER_COMPOSE) up $(ARGS)
+
+.PHONY: run
+run:
+	@$(DOCKER) run --rm -it ${IMAGE}:${TAG} $(ARGS)
 
 .PHONY: stop
 stop:
@@ -78,6 +99,29 @@ ifneq (,$(wildcard $(CONTEXT)/.gitignore))
 $(CONTEXT)/.dockerignore: $(CONTEXT)/.gitignore
 	@$(CP) $< $@
 else
-$(CONTEXT)/.dockerignore:
-	@$(TOUCH) $@
+$(CONTEXT)/.dockerignore: ;
 endif
+
+define DOCKER_BUILD_YAML
+version: '3.7'
+services:
+  main:
+    image: $${IMAGE}:$${TAG}
+    build:
+      context: $${CONTEXT}
+      dockerfile: $${DOCKERFILE}
+  major:
+    extends: main
+    image: $${IMAGE}:$${MAJOR}
+  minor:
+    extends: main
+    image: $${IMAGE}:$${MAJOR}.$${MINOR}
+  patch:
+    extends: main
+    image: $${IMAGE}:$${MAJOR}.$${MINOR}.$${PATCH}
+endef
+export DOCKER_BUILD_YAML
+
+$(DOCKER_TMP)/docker-build.yaml:
+	@$(MKDIR) -p $(@D)
+	@echo "$$DOCKER_BUILD_YAML" > $@

@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 17:00:53
+# Last Modified: 07-10-2021 18:05:46
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -22,13 +22,12 @@
 
 include mkpm.mk
 ifneq (,$(MKPM))
-include main.mk
+-include $(MKPM)/gnu
 
 PACK_DIR := $(MKPM_TMP)/pack
 
 .PHONY: info
 info:
-	@$(ENV)
 
 .PHONY: pack
 pack:
@@ -62,6 +61,10 @@ clean:
 .PHONY: purge
 purge: clean
 	@$(GIT) clean -fXd
+
+.PHONY: docker-%
+docker-%:
+	@$(MAKE) -s -C docker $(subst docker-,,$@)
 
 -include $(call actions)
 
