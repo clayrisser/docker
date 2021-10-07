@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 18:13:35
+# Last Modified: 07-10-2021 18:38:18
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -31,10 +31,10 @@ ifeq (,$(REGISTRY))
 else
 	export IMAGE := $(REGISTRY)/$(NAME)
 endif
-export CONTAINER_NAME ?= $(shell $(ECHO) $(NAME) $(NOFAIL) | $(SED) "s|[\/-]|_|g" $(NOFAIL))
-export MAJOR := $(shell $(ECHO) $(VERSION) $(NOFAIL) | $(CUT) -d. -f1 $(NOFAIL))
-export MINOR := $(shell $(ECHO) $(VERSION) $(NOFAIL) | $(CUT) -d. -f2 $(NOFAIL))
-export PATCH := $(shell $(ECHO) $(VERSION) $(NOFAIL) | $(CUT) -d. -f3 $(NOFAIL))
+export CONTAINER_NAME ?= $(shell $(ECHO) $(NAME) 2>$(NULL) | $(SED) "s|[\/-]|_|g" $(NOFAIL))
+export MAJOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f1 $(NOFAIL))
+export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
+export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 
 DOCKER_COMPOSE ?= docker-compose
 DOCKER ?= docker
