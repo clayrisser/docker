@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 18:38:18
+# Last Modified: 07-10-2021 18:47:21
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -77,7 +77,9 @@ shell:
 logs:
 	@$(DOCKER_COMPOSE) logs -f $(ARGS)
 
-.PHONY: up
+.PHONY: up ~up
+~up:
+	@$(MAKE) -s up ARGS="-d $(ARGS)"
 up:
 	@$(DOCKER_COMPOSE) up $(ARGS)
 
