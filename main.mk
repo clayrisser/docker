@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 26-11-2021 13:09:49
+# Last Modified: 26-11-2021 13:24:49
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -116,6 +116,8 @@ ifeq ($(DOCKER_FLAVOR),docker)
 else
 	-@$(DOCKER_COMPOSE) down
 endif
+	-@$(DOCKER) volume prune -f
+	-@$(DOCKER) network prune -f
 
 ifneq (,$(wildcard $(CURDIR)/sysctl.list))
 SYSCTL_LIST := $(shell [ "$(shell $(CAT) $(CURDIR)/sysctl.list | \
