@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 18:47:21
+# Last Modified: 26-11-2021 12:45:14
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -36,31 +36,47 @@ export MAJOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f1 $(NOFAIL))
 export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 
-DOCKER_COMPOSE ?= docker-compose
-DOCKER ?= docker
+DOCKER_COMPOSE ?= $(call ternary,podman -v $(NOOUT) && \
+	podman-compose -v,podman-compose,docker-compose)
+ifeq ($(DOCKER_COMPOSE),docker-compose)
+DOCKER_COMPOSE := $(call ternary,docker -v $(NOOUT) && \
+	docker-compose -v,docker-compose,podman-compose)
+endif
+SYSCTL ?= $(call ternary,sysctl -V,sysctl,$(TRUE))
+ifeq ($(DOCKER_COMPOSE),docker-compose)
+	DOCKER ?= docker
+	_SUDO_TARGET := $(call ternary,$(DOCKER) ps,,sudo)
+ifneq (,$(_SUDO_TARGET))
+	DOCKER := $(SUDO) -E $(DOCKER)
+	DOCKER_COMPOSE := $(SUDO) -E $(DOCKER_COMPOSE)
+endif
+else
+	DOCKER ?= podman
+	_SYSCTL_TARGET := sysctl
+endif
 
 DOCKER_TMP := $(MKPM_TMP)/docker
 
 .PHONY: build
-build: $(DOCKER_TMP)/docker-build.yaml $(CONTEXT)/.dockerignore
+build: $(DOCKER_TMP)/docker-build.yaml $(CONTEXT)/.dockerignore $(_SUDO_TARGET)
 	@$(DOCKER_COMPOSE) -f $< build $(ARGS) main
 	@$(MAKE) -s tag
 
 .PHONY: tag
-tag:
+tag: $(_SUDO_TARGET)
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
 
 .PHONY: tags
-tags:
+tags: $(_SUDO_TARGET)
 	@echo ${IMAGE}:${TAG}
 	@echo ${IMAGE}:${MAJOR}
 	@echo ${IMAGE}:${MAJOR}.${MINOR}
 	@echo ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
 
 .PHONY: pull
-pull: $(DOCKER_TMP)/docker-build.yaml
+pull: $(DOCKER_TMP)/docker-build.yaml $(_SUDO_TARGET)
 	@$(DOCKER_COMPOSE) -f $< pull $(ARGS)
 
 .PHONY: push
@@ -68,34 +84,50 @@ push: $(DOCKER_TMP)/docker-build.yaml
 	@$(DOCKER_COMPOSE) -f $< push $(ARGS)
 
 .PHONY: shell
-shell:
+shell: $(_SUDO_TARGET)
 	@($(DOCKER) ps | $(GREP) -E "$(NAME)$$" $(NOOUT)) && \
 		$(DOCKER) exec -it $(NAME) /bin/sh || \
 		$(DOCKER) run --rm -it --entrypoint /bin/sh $(IMAGE):$(TAG)
 
 .PHONY: logs
-logs:
+logs: $(_SUDO_TARGET)
 	@$(DOCKER_COMPOSE) logs -f $(ARGS)
 
 .PHONY: up ~up
-~up:
+~up: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
 	@$(MAKE) -s up ARGS="-d $(ARGS)"
-up:
+up: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
 	@$(DOCKER_COMPOSE) up $(ARGS)
 
 .PHONY: run
-run:
+run: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
 	@$(DOCKER) run --rm -it ${IMAGE}:${TAG} $(ARGS)
 
 .PHONY: stop
-stop:
+stop: $(_SUDO_TARGET)
 	@$(DOCKER_COMPOSE) stop $(ARGS)
 
 .PHONY: clean
-clean:
+clean: $(_SUDO_TARGET)
 	-@$(DOCKER_COMPOSE) kill
 	-@$(DOCKER_COMPOSE) down -v --remove-orphans
 	-@$(DOCKER_COMPOSE) rm -v
+
+ifneq (,$(wildcard $(CURDIR)/sysctl.list))
+SYSCTL_LIST := $(shell [ "$(shell $(CAT) $(CURDIR)/sysctl.list | \
+	$(SED) 's|^\s*\#.*$$||g' | \
+	$(SED) 's|^\s*$$||g' | \
+	$(SED) '/^$$/d')" = "" ] || echo 1)
+endif
+ifneq (,$(SYSCTL_LIST))
+.PHONY: sysctl
+sysctl: sudo
+	$(WHILE) IFS='' $(READ) -r LINE || [ -n "$$LINE" ]; $(DO) \
+		$(SUDO) $(SYSCTL) -w "$$LINE"; \
+	$(DONE) < $(CURDIR)/sysctl.list
+else
+sysctl: ;
+endif
 
 ifneq (,$(wildcard $(CONTEXT)/.gitignore))
 $(CONTEXT)/.dockerignore: $(CONTEXT)/.gitignore
@@ -126,4 +158,4 @@ export DOCKER_BUILD_YAML
 
 $(DOCKER_TMP)/docker-build.yaml:
 	@$(MKDIR) -p $(@D)
-	@echo "$$DOCKER_BUILD_YAML" > $@
+	@$(ECHO) "$$DOCKER_BUILD_YAML" > $@

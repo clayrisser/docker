@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 18:51:56
+# Last Modified: 26-11-2021 12:48:05
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -22,7 +22,7 @@
 
 MKPM_PKG_NAME := docker
 
-MKPM_PKG_VERSION := 0.0.3
+MKPM_PKG_VERSION := 0.0.4
 
 MKPM_PKG_DESCRIPTION := "build docker images using make"
 
@@ -33,7 +33,7 @@ MKPM_PKG_SOURCE := https://gitlab.com/bitspur/community/mkgnu.git
 MKPM_PKG_FILES_REGEX :=
 
 MKPM_PACKAGES := \
-	gnu=0.0.1
+	gnu=0.0.3
 
 MKPM_REPOS := \
 	https://gitlab.com/bitspur/community/mkpm-stable.git

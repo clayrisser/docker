@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-10-2021 18:16:50
+# Last Modified: 26-11-2021 02:19:01
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -47,10 +47,6 @@ pack:
 
 .PHONY: publish
 publish: pack
-
-.PHONY: sudo
-sudo:
-	@sudo true
 
 .PHONY: clean
 clean:
