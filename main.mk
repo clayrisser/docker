@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 26-11-2021 12:45:14
+# Last Modified: 26-11-2021 13:05:51
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -107,11 +107,13 @@ run: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
 stop: $(_SUDO_TARGET)
 	@$(DOCKER_COMPOSE) stop $(ARGS)
 
-.PHONY: clean
-clean: $(_SUDO_TARGET)
-	-@$(DOCKER_COMPOSE) kill
+.PHONY: down
+down: $(_SUDO_TARGET)
+ifeq ($(DOCKER_COMPOSE),docker-compose)
 	-@$(DOCKER_COMPOSE) down -v --remove-orphans
-	-@$(DOCKER_COMPOSE) rm -v
+else
+	-@$(DOCKER_COMPOSE) down
+endif
 
 ifneq (,$(wildcard $(CURDIR)/sysctl.list))
 SYSCTL_LIST := $(shell [ "$(shell $(CAT) $(CURDIR)/sysctl.list | \
