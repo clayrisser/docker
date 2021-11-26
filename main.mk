@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 26-11-2021 13:05:51
+# Last Modified: 26-11-2021 13:09:49
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -43,7 +43,9 @@ DOCKER_COMPOSE := $(call ternary,docker -v $(NOOUT) && \
 	docker-compose -v,docker-compose,podman-compose)
 endif
 SYSCTL ?= $(call ternary,sysctl -V,sysctl,$(TRUE))
+DOCKER_FLAVOR := podman
 ifeq ($(DOCKER_COMPOSE),docker-compose)
+	DOCKER_FLAVOR := docker
 	DOCKER ?= docker
 	_SUDO_TARGET := $(call ternary,$(DOCKER) ps,,sudo)
 ifneq (,$(_SUDO_TARGET))
@@ -109,7 +111,7 @@ stop: $(_SUDO_TARGET)
 
 .PHONY: down
 down: $(_SUDO_TARGET)
-ifeq ($(DOCKER_COMPOSE),docker-compose)
+ifeq ($(DOCKER_FLAVOR),docker)
 	-@$(DOCKER_COMPOSE) down -v --remove-orphans
 else
 	-@$(DOCKER_COMPOSE) down
