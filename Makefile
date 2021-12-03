@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 26-11-2021 02:19:01
+# Last Modified: 03-12-2021 12:39:56
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -21,13 +21,19 @@
 # limitations under the License.
 
 include mkpm.mk
-ifneq (,$(MKPM))
 -include $(MKPM)/gnu
+ifneq (,$(MKPM_READY))
+
+-include main.mk
 
 PACK_DIR := $(MKPM_TMP)/pack
 
 .PHONY: info
 info:
+	@echo DOCKER: $(DOCKER)
+	@echo DOCKER_COMPOSE: $(DOCKER_COMPOSE)
+	@echo PODMAN: $(PODMAN)
+	@echo PODMAN_COMPOSE: $(PODMAN_COMPOSE)
 
 .PHONY: pack
 pack:

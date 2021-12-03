@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 26-11-2021 13:24:57
+# Last Modified: 03-12-2021 12:40:18
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -22,7 +22,7 @@
 
 MKPM_PKG_NAME := docker
 
-MKPM_PKG_VERSION := 0.0.7
+MKPM_PKG_VERSION := 0.0.8
 
 MKPM_PKG_DESCRIPTION := "build docker images using make"
 

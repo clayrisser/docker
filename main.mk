@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 26-11-2021 13:24:49
+# Last Modified: 03-12-2021 12:38:35
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -36,25 +36,28 @@ export MAJOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f1 $(NOFAIL))
 export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 
-DOCKER_COMPOSE ?= $(call ternary,podman -v $(NOOUT) && \
-	podman-compose -v,podman-compose,docker-compose)
+export PODMAN_COMPOSE_TRANSFORM_POLICY ?= identity
+export DOCKER_COMPOSE ?= $(call ternary,podman -v $(NOOUT) && \
+	podman-compose -v,podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),docker-compose)
 ifeq ($(DOCKER_COMPOSE),docker-compose)
 DOCKER_COMPOSE := $(call ternary,docker -v $(NOOUT) && \
 	docker-compose -v,docker-compose,podman-compose)
 endif
-SYSCTL ?= $(call ternary,sysctl -V,sysctl,$(TRUE))
-DOCKER_FLAVOR := podman
-ifeq ($(DOCKER_COMPOSE),docker-compose)
+export SYSCTL ?= $(call ternary,sysctl -V,sysctl,$(TRUE))
+export DOCKER_FLAVOR := podman
+ifeq ($(findstring docker-compose,$(DOCKER_COMPOSE)),docker-compose)
 	DOCKER_FLAVOR := docker
-	DOCKER ?= docker
+	export DOCKER ?= docker
 	_SUDO_TARGET := $(call ternary,$(DOCKER) ps,,sudo)
 ifneq (,$(_SUDO_TARGET))
 	DOCKER := $(SUDO) -E $(DOCKER)
 	DOCKER_COMPOSE := $(SUDO) -E $(DOCKER_COMPOSE)
 endif
 else
-	DOCKER ?= podman
+	export DOCKER ?= podman
 	_SYSCTL_TARGET := sysctl
+	export PODMAN_COMPOSE ?= $(DOCKER_COMPOSE)
+	export PODMAN ?= $(DOCKER)
 endif
 
 DOCKER_TMP := $(MKPM_TMP)/docker
