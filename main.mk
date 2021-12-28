@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 03-12-2021 12:38:35
+# Last Modified: 28-12-2021 01:46:20
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -36,6 +36,7 @@ export MAJOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f1 $(NOFAIL))
 export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 
+export YQ ?= $(call ternary,yq --version,yq,$(TRUE))
 export PODMAN_COMPOSE_TRANSFORM_POLICY ?= identity
 export DOCKER_COMPOSE ?= $(call ternary,podman -v $(NOOUT) && \
 	podman-compose -v,podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),docker-compose)
@@ -168,3 +169,14 @@ export DOCKER_BUILD_YAML
 $(DOCKER_TMP)/docker-build.yaml:
 	@$(MKDIR) -p $(@D)
 	@$(ECHO) "$$DOCKER_BUILD_YAML" > $@
+
+ifneq ($(YQ),true)
+DOCKER_SERVICES := $(shell $(CAT) docker-compose.yaml | $(YQ) '.services' | $(JQ) -r 'keys[]')
+.PHONY: $(DOCKER_SERVICES)
+$(DOCKER_SERVICES):
+	@$(DOCKER_COMPOSE) up $(ARGS) $@
+endif
+
+.PHONY: %-d
+%-d:
+	@$(MAKE) -s $(subst -d,,$@) ARGS="-d"
