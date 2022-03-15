@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 04-02-2022 12:06:29
+# Last Modified: 15-03-2022 09:44:19
 # Modified By: Clay Risser
 # -----
 # BitSpur Inc (c) Copyright 2021
@@ -147,7 +147,7 @@ $(CONTEXT)/.dockerignore: ;
 endif
 
 define DOCKER_BUILD_YAML
-version: '3.7'
+version: '2'
 services:
   main:
     image: $${IMAGE}:$${TAG}
