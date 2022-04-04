@@ -3,10 +3,10 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 04-02-2022 12:09:11
+# Last Modified: 04-04-2022 06:03:37
 # Modified By: Clay Risser
 # -----
-# BitSpur Inc (c) Copyright 2021
+# Risser Labs LLC (c) Copyright 2021
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,10 +30,12 @@ PACK_DIR := $(MKPM_TMP)/pack
 
 .PHONY: info
 info:
+	@echo DOCKER_FLAVOR: $(DOCKER_FLAVOR)
 	@echo DOCKER: $(DOCKER)
 	@echo DOCKER_COMPOSE: $(DOCKER_COMPOSE)
 	@echo PODMAN: $(PODMAN)
 	@echo PODMAN_COMPOSE: $(PODMAN_COMPOSE)
+	@echo DOCKER_SERVICES: $(DOCKER_SERVICES)
 
 .PHONY: pack
 pack:

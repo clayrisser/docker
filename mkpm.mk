@@ -3,10 +3,10 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 15-03-2022 09:44:27
+# Last Modified: 04-04-2022 06:29:16
 # Modified By: Clay Risser
 # -----
-# BitSpur Inc (c) Copyright 2021
+# Risser Labs LLC (c) Copyright 2021
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 
 MKPM_PKG_NAME := docker
 
-MKPM_PKG_VERSION := 0.0.11
+MKPM_PKG_VERSION := 0.0.12
 
 MKPM_PKG_DESCRIPTION := "build docker images using make"
 
