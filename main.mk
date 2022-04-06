@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 06-04-2022 02:54:49
+# Last Modified: 06-04-2022 03:12:15
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -118,13 +118,13 @@ logs: $(_SUDO_TARGET) $(DOCKER_LOGS_DEPENDENCIES)
 .PHONY: up ~up
 ~up: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
 	@$(MAKE) -s up ARGS="-d $(ARGS)"
-up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_DEPENDENCIES)
+up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_DEPENDENCIES) $(DOCKER_RUNTIME_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) up $(ARGS)
 
 .PHONY: run ~run
 ~run:
 	@$(MAKE) -s run ARGS="-d $(ARGS)"
-run: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_RUN_DEPENDENCIES)
+run: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_RUN_DEPENDENCIES) $(DOCKER_RUNTIME_DEPENDENCIES)
 	@$(DOCKER) run --rm -it ${IMAGE}:${TAG} $(ARGS)
 
 .PHONY: stop
@@ -201,7 +201,7 @@ ifneq ($(YQ),true)
 DOCKER_SERVICES := $(shell $(CAT) $(DOCKER_COMPOSE_YAML) | $(YQ) | \
 	$(JQ) '.services' | $(JQ) -r 'keys[] | select (.!=null)' $(NOFAIL))
 .PHONY: $(DOCKER_SERVICES)
-$(DOCKER_SERVICES):
+$(DOCKER_SERVICES): $(DOCKER_RUNTIME_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) up $(ARGS) $@
 endif
 endif
