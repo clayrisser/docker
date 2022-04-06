@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 04-04-2022 06:26:54
+# Last Modified: 06-04-2022 02:54:49
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -80,57 +80,59 @@ endif
 DOCKER_TMP := $(MKPM_TMP)/docker
 
 .PHONY: build
-build: $(DOCKER_TMP)/docker-build.yaml $(CONTEXT)/.dockerignore $(_SUDO_TARGET)
+build: $(DOCKER_TMP)/docker-build.yaml $(CONTEXT)/.dockerignore $(_SUDO_TARGET) $(DOCKER_BUILD_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $< build $(ARGS) main
 	@$(MAKE) -s tag
 
 .PHONY: tag
-tag: $(_SUDO_TARGET)
+tag: $(_SUDO_TARGET) $(DOCKER_TAG_DEPENDENCIES)
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
 
 .PHONY: tags
-tags: $(_SUDO_TARGET)
+tags: $(_SUDO_TARGET) $(DOCKER_TAGS_DEPENDENCIES)
 	@echo ${IMAGE}:${TAG}
 	@echo ${IMAGE}:${MAJOR}
 	@echo ${IMAGE}:${MAJOR}.${MINOR}
 	@echo ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
 
 .PHONY: pull
-pull: $(DOCKER_TMP)/docker-build.yaml $(_SUDO_TARGET)
+pull: $(DOCKER_TMP)/docker-build.yaml $(_SUDO_TARGET) $(DOCKER_PULL_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $< pull $(ARGS)
 
 .PHONY: push
-push: $(DOCKER_TMP)/docker-build.yaml
+push: $(DOCKER_TMP)/docker-build.yaml $(DOCKER_PUSH_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $< push $(ARGS)
 
 .PHONY: shell
-shell: $(_SUDO_TARGET)
+shell: $(_SUDO_TARGET) $(DOCKER_SHELL_DEPENDENCIES)
 	@($(DOCKER) ps | $(GREP) -E "$(NAME)$$" $(NOOUT)) && \
 		$(DOCKER) exec -it $(NAME) /bin/sh || \
 		$(DOCKER) run --rm -it --entrypoint /bin/sh $(IMAGE):$(TAG)
 
 .PHONY: logs
-logs: $(_SUDO_TARGET)
+logs: $(_SUDO_TARGET) $(DOCKER_LOGS_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) logs -f $(ARGS)
 
 .PHONY: up ~up
 ~up: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
 	@$(MAKE) -s up ARGS="-d $(ARGS)"
-up: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
+up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) up $(ARGS)
 
-.PHONY: run
-run: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
+.PHONY: run ~run
+~run:
+	@$(MAKE) -s run ARGS="-d $(ARGS)"
+run: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_RUN_DEPENDENCIES)
 	@$(DOCKER) run --rm -it ${IMAGE}:${TAG} $(ARGS)
 
 .PHONY: stop
-stop: $(_SUDO_TARGET)
+stop: $(_SUDO_TARGET) $(DOCKER_STOP_DEPENDENCIES)
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) stop $(ARGS)
 
 .PHONY: down
-down: $(_SUDO_TARGET)
+down: $(_SUDO_TARGET) $(DOCKER_DOWN_DEPENDENCIES)
 ifeq ($(DOCKER_FLAVOR),docker)
 	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down -v --remove-orphans
 else
