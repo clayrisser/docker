@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 06-04-2022 03:12:15
+# Last Modified: 15-04-2022 08:10:56
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -67,8 +67,8 @@ ifeq ($(findstring docker-compose,$(DOCKER_COMPOSE)),docker-compose)
 	export DOCKER ?= docker
 	_SUDO_TARGET := $(call ternary,$(DOCKER) ps,,sudo)
 ifneq (,$(_SUDO_TARGET))
-	DOCKER := $(SUDO) -E $(DOCKER)
-	DOCKER_COMPOSE := $(SUDO) -E $(DOCKER_COMPOSE)
+	DOCKER := $(SUDO) $(DOCKER)
+	DOCKER_COMPOSE := $(SUDO) $(DOCKER_COMPOSE)
 endif
 else
 	export DOCKER ?= podman
