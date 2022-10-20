@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 15-04-2022 08:10:56
+# Last Modified: 20-10-2022 03:01:02
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -40,7 +40,7 @@ export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 
 export DOCKER_FLAVOR ?= podman
-export YQ ?= $(shell (yq | grep -q '\-\-output\-format') && echo yq -o json || echo yq)
+export YQ ?= $(shell (yq | grep -q '\--output-format') && echo yq -o json || echo yq)
 export PODMAN_COMPOSE_TRANSFORM_POLICY ?= identity
 
 _DEFAULT_PODMAN_COMPOSE := $(call ternary,podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose)
