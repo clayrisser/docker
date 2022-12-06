@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 20-11-2022 12:07:30
+# Last Modified: 06-12-2022 05:19:21
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -40,8 +40,8 @@ export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 
 export DOCKER_FLAVOR ?= podman
-export YQ ?= yq
 export PODMAN_COMPOSE_TRANSFORM_POLICY ?= identity
+export YQ := $(call ternary,yq --help | $(GREP) -q '\-o, --output-format string',yq -o json,yq)
 
 _DEFAULT_PODMAN_COMPOSE := $(call ternary,podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose)
 ifeq ($(DOCKER_FLAVOR),docker)
@@ -197,7 +197,7 @@ $(DOCKER_TMP)/docker-build.yaml:
 export DOCKER_SERVICES :=
 ifneq (,$(wildcard $(DOCKER_COMPOSE_YAML)))
 ifneq ($(AUTOCALCULATE_DOCKER_SERVICES),0)
-DOCKER_SERVICES := $(shell $(CAT) $(DOCKER_COMPOSE_YAML) | $(YQ) -o json | \
+DOCKER_SERVICES := $(shell $(CAT) $(DOCKER_COMPOSE_YAML) | $(YQ) | \
 	$(JQ) '.services' | $(JQ) -r 'keys[] | select (.!=null)' $(NOFAIL))
 .PHONY: $(DOCKER_SERVICES)
 $(DOCKER_SERVICES): $(DOCKER_RUNTIME_DEPENDENCIES)

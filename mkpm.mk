@@ -22,7 +22,7 @@
 
 MKPM_PKG_NAME := docker
 
-MKPM_PKG_VERSION := 0.1.0
+MKPM_PKG_VERSION := 0.1.1
 
 MKPM_PKG_DESCRIPTION := "build docker images using make"
 
