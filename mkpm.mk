@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 20-11-2022 12:01:48
+# Last Modified: 07-04-2023 10:30:58
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -22,7 +22,7 @@
 
 MKPM_PKG_NAME := docker
 
-MKPM_PKG_VERSION := 0.1.1
+MKPM_PKG_VERSION := 0.1.2
 
 MKPM_PKG_DESCRIPTION := "build docker images using make"
 
