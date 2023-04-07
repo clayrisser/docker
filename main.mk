@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-04-2023 11:00:49
+# Last Modified: 07-04-2023 13:40:23
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -27,9 +27,13 @@ export NAME ?= void
 export TAG ?= latest
 export VERSION ?= 0.0.1
 export DOCKERFILE ?= $(CURDIR)/Dockerfile
-export DOCKER_BUILD_YAML ?= $(CURDIR)/docker-build.yaml
 export DOCKER_COMPOSE_YAML ?= $(CURDIR)/docker-compose.yaml
 export DOCKER_COMPOSE_VERSION ?= 3.3
+ifeq (,$(DOCKER_BUILD_YAML))
+ifneq (,$(wildcard $(CURDIR)/docker-build.yaml))
+export DOCKER_BUILD_YAML ?= $(CURDIR)/docker-build.yaml
+endif
+endif
 ifeq (,$(REGISTRY))
 	export IMAGE := $(NAME)
 else
@@ -42,6 +46,7 @@ ifeq (.,$(shell $(ECHO) $(VERSION) 2>$(NULL) | $(TR) -cd '.' $(NOFAIL)))
 export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 endif
 ifeq (..,$(shell $(ECHO) $(VERSION) 2>$(NULL) | $(TR) -cd '.' $(NOFAIL)))
+export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 endif
 
