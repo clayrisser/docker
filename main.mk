@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 06-12-2022 05:19:21
+# Last Modified: 07-04-2023 10:30:13
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -28,6 +28,7 @@ export TAG ?= latest
 export VERSION ?= 0.0.1
 export DOCKERFILE ?= $(CURDIR)/Dockerfile
 export DOCKER_COMPOSE_YAML ?= $(CURDIR)/docker-compose.yaml
+export DOCKER_BUILD_YAML ?=
 export DOCKER_COMPOSE_VERSION ?= 3.3
 ifeq (,$(REGISTRY))
 	export IMAGE := $(NAME)
@@ -164,7 +165,7 @@ else
 $(CONTEXT)/.dockerignore: ;
 endif
 
-define DOCKER_BUILD_YAML
+define _DOCKER_BUILD_YAML
 version: '$(DOCKER_COMPOSE_VERSION)'
 services:
   main:
@@ -188,11 +189,15 @@ services:
       context: $${CONTEXT}
       dockerfile: $${DOCKERFILE}
 endef
-export DOCKER_BUILD_YAML
+export _DOCKER_BUILD_YAML
 
 $(DOCKER_TMP)/docker-build.yaml:
+ifeq (,$(DOCKER_BUILD_YAML))
+	@$(CP) $(DOCKER_BUILD_YAML) $@
+else
 	@$(MKDIR) -p $(@D)
-	@$(ECHO) "$$DOCKER_BUILD_YAML" > $@
+	@$(ECHO) "$$_DOCKER_BUILD_YAML" > $@
+endif
 
 export DOCKER_SERVICES :=
 ifneq (,$(wildcard $(DOCKER_COMPOSE_YAML)))
