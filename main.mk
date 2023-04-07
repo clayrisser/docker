@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-04-2023 13:40:23
+# Last Modified: 07-04-2023 18:14:54
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -29,6 +29,7 @@ export VERSION ?= 0.0.1
 export DOCKERFILE ?= $(CURDIR)/Dockerfile
 export DOCKER_COMPOSE_YAML ?= $(CURDIR)/docker-compose.yaml
 export DOCKER_COMPOSE_VERSION ?= 3.3
+export PROJECT_NAME ?= $(NAME)
 ifeq (,$(DOCKER_BUILD_YAML))
 ifneq (,$(wildcard $(CURDIR)/docker-build.yaml))
 export DOCKER_BUILD_YAML ?= $(CURDIR)/docker-build.yaml
@@ -142,7 +143,7 @@ logs: $(_SUDO_TARGET) $(DOCKER_LOGS_DEPENDENCIES)
 ~up: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
 	@$(MAKE) -s up ARGS="-d $(ARGS)"
 up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_DEPENDENCIES) $(DOCKER_RUNTIME_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) up $(ARGS)
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) up $(ARGS)
 
 .PHONY: run ~run
 ~run:
