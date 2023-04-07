@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-04-2023 10:56:59
+# Last Modified: 07-04-2023 11:00:49
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -259,7 +259,7 @@ endif
 endif
 export _DOCKER_BUILD_YAML
 
-$(DOCKER_TMP)/docker-build.yaml:
+$(DOCKER_TMP)/docker-build.yaml: $(DOCKER_BUILD_YAML)
 	@$(MKDIR) -p $(@D)
 ifneq (,$(wildcard $(DOCKER_BUILD_YAML)))
 	@$(CP) $(DOCKER_BUILD_YAML) $@
