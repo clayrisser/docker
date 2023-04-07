@@ -3,7 +3,7 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 07-04-2023 10:30:13
+# Last Modified: 07-04-2023 10:50:17
 # Modified By: Clay Risser
 # -----
 # Risser Labs LLC (c) Copyright 2021
@@ -27,8 +27,8 @@ export NAME ?= void
 export TAG ?= latest
 export VERSION ?= 0.0.1
 export DOCKERFILE ?= $(CURDIR)/Dockerfile
+export DOCKER_BUILD_YAML ?= $(CURDIR)/docker-build.yaml
 export DOCKER_COMPOSE_YAML ?= $(CURDIR)/docker-compose.yaml
-export DOCKER_BUILD_YAML ?=
 export DOCKER_COMPOSE_VERSION ?= 3.3
 ifeq (,$(REGISTRY))
 	export IMAGE := $(NAME)
@@ -36,9 +36,14 @@ else
 	export IMAGE := $(REGISTRY)/$(NAME)
 endif
 export CONTAINER_NAME ?= $(shell $(ECHO) $(NAME) 2>$(NULL) | $(SED) "s|[\/-]|_|g" $(NOFAIL))
+
 export MAJOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f1 $(NOFAIL))
+ifeq (.,$(shell $(ECHO) $(VERSION) 2>$(NULL) | $(TR) -cd '.' $(NOFAIL)))
 export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
+endif
+ifeq (..,$(shell $(ECHO) $(VERSION) 2>$(NULL) | $(TR) -cd '.' $(NOFAIL)))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
+endif
 
 export DOCKER_FLAVOR ?= podman
 export PODMAN_COMPOSE_TRANSFORM_POLICY ?= identity
@@ -87,16 +92,28 @@ build: $(DOCKER_TMP)/docker-build.yaml $(CONTEXT)/.dockerignore $(_SUDO_TARGET) 
 
 .PHONY: tag
 tag: $(_SUDO_TARGET) $(DOCKER_TAG_DEPENDENCIES)
+ifneq (,$(MAJOR))
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}
+endif
+ifneq (,$(MINOR))
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}
+endif
+ifneq (,$(PATCH))
 	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
+endif
 
 .PHONY: tags
 tags: $(_SUDO_TARGET) $(DOCKER_TAGS_DEPENDENCIES)
-	@echo ${IMAGE}:${TAG}
-	@echo ${IMAGE}:${MAJOR}
-	@echo ${IMAGE}:${MAJOR}.${MINOR}
-	@echo ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
+	@$(ECHO) ${IMAGE}:${TAG}
+ifneq (,$(MAJOR))
+	@$(ECHO) ${IMAGE}:${MAJOR}
+endif
+ifneq (,$(MINOR))
+	@$(ECHO) ${IMAGE}:${MAJOR}.${MINOR}
+endif
+ifneq (,$(PATCH))
+	@$(ECHO) ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
+endif
 
 .PHONY: pull
 pull: $(DOCKER_TMP)/docker-build.yaml $(_SUDO_TARGET) $(DOCKER_PULL_DEPENDENCIES)
@@ -165,6 +182,7 @@ else
 $(CONTEXT)/.dockerignore: ;
 endif
 
+ifneq (,$(PATCH))
 define _DOCKER_BUILD_YAML
 version: '$(DOCKER_COMPOSE_VERSION)'
 services:
@@ -189,10 +207,60 @@ services:
       context: $${CONTEXT}
       dockerfile: $${DOCKERFILE}
 endef
+else
+ifneq (,$(MINOR))
+define _DOCKER_BUILD_YAML
+version: '$(DOCKER_COMPOSE_VERSION)'
+services:
+  main:
+    image: $${IMAGE}:$${TAG}
+    build:
+      context: $${CONTEXT}
+      dockerfile: $${DOCKERFILE}
+  major:
+    image: $${IMAGE}:$${MAJOR}
+    build:
+      context: $${CONTEXT}
+      dockerfile: $${DOCKERFILE}
+  minor:
+    image: $${IMAGE}:$${MAJOR}.$${MINOR}
+    build:
+      context: $${CONTEXT}
+      dockerfile: $${DOCKERFILE}
+endef
+else
+ifneq (,$(MAJOR))
+define _DOCKER_BUILD_YAML
+version: '$(DOCKER_COMPOSE_VERSION)'
+services:
+  main:
+    image: $${IMAGE}:$${TAG}
+    build:
+      context: $${CONTEXT}
+      dockerfile: $${DOCKERFILE}
+  major:
+    image: $${IMAGE}:$${MAJOR}
+    build:
+      context: $${CONTEXT}
+      dockerfile: $${DOCKERFILE}
+endef
+else
+define _DOCKER_BUILD_YAML
+version: '$(DOCKER_COMPOSE_VERSION)'
+services:
+  main:
+    image: $${IMAGE}:$${TAG}
+    build:
+      context: $${CONTEXT}
+      dockerfile: $${DOCKERFILE}
+endef
+endif
+endif
+endif
 export _DOCKER_BUILD_YAML
 
 $(DOCKER_TMP)/docker-build.yaml:
-ifeq (,$(DOCKER_BUILD_YAML))
+ifneq (,$(wildcard $(DOCKER_BUILD_YAML)))
 	@$(CP) $(DOCKER_BUILD_YAML) $@
 else
 	@$(MKDIR) -p $(@D)
