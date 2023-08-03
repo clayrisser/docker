@@ -1,0 +1,15 @@
+{
+  "name": "docker",
+  "version": "0.2.0",
+  "description": "build docker images using make",
+  "author": "Clay Risser <clayrisser@gmail.com>",
+  "repo": "git@gitlab.com:bitspur/mkpm/packages.git",
+  "packages": {
+    "default": {
+      "gnu": "0.1.0"
+    }
+  },
+  "repos": {
+    "default": "https://gitlab.com/bitspur/mkpm/packages.git"
+  }
+}

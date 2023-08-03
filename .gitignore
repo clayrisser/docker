@@ -1,3 +1,5 @@
 .dockerignore
-.mkpm/
+
+# mkpm
 /*.tar.gz
+.mkpm/mkpm

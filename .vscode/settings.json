@@ -1,11 +1,13 @@
 {
   "cSpell.words": [
+    "bitspur",
     "cloc",
     "gnumake",
     "gnused",
     "makefiles",
     "mkpm",
     "nixpkgs",
+    "risser",
     "stdenv"
   ],
   "psi-header.variables": [["projectCreationYear", "2021"]],
@@ -95,5 +97,8 @@
   "psi-header.license-reference": {
     "uri": "../LICENSE",
     "uriIsLocalFile": true
+  },
+  "files.associations": {
+    "Mkpmfile": "makefile"
   }
 }
