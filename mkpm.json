@@ -4,6 +4,7 @@
   "description": "build docker images using make",
   "author": "Clay Risser <clayrisser@gmail.com>",
   "repo": "git@gitlab.com:bitspur/mkpm/packages.git",
+  "source": "https://gitlab.com/bitspur/mkpm/docker.git",
   "packages": {
     "default": {
       "gnu": "0.1.0"
