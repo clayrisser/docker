@@ -3,8 +3,8 @@
 # File Created: 07-10-2021 16:58:49
 # Author: Clay Risser
 # -----
-# Last Modified: 03-08-2023 05:29:12
-# Modified By: Clay Risser
+# Last Modified: 04-08-2023 15:39:43
+# Modified By: Lalit Rajak
 # -----
 # Risser Labs LLC (c) Copyright 2021
 #
@@ -34,25 +34,6 @@ info:
 	@echo PODMAN: $(PODMAN)
 	@echo PODMAN_COMPOSE: $(PODMAN_COMPOSE)
 	@echo DOCKER_SERVICES: $(DOCKER_SERVICES)
-
-.PHONY: pack
-pack:
-	@rm -rf $(PACK_DIR) $(NOFAIL) && mkdir -p $(PACK_DIR)
-	@cp main.mk $(PACK_DIR)
-	@cp mkpm.mk $(PACK_DIR)
-	@cp LICENSE $(PACK_DIR) $(NOFAIL)
-	@for f in $(shell [ "$(MKPM_FILES_REGEX)" = "" ] || \
-		$(FIND) . -type f -not -path './.git/*' | $(SED) 's|^\.\/||g' | \
-		$(GREP) -E "$(MKPM_FILES_REGEX)") \
-		$(shell $(GIT) ls-files | $(GREP) -E "^README[^\/]*$$"); do \
-			PARENT_DIR=$$(echo $$f | $(SED) 's|[^\/]\+$$||g' | $(SED) 's|\/$$||g') && \
-			([ "$$PARENT_DIR" != "" ] && mkdir -p $(PACK_DIR)/$$PARENT_DIR || true) && \
-			cp $$f $(PACK_DIR)/$$f; \
-		done
-	@tar -cvzf $(MKPM_PKG_NAME).tar.gz -C $(PACK_DIR) .
-
-.PHONY: publish
-publish: pack
 
 .PHONY: clean
 clean:
