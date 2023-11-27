@@ -4,3 +4,8 @@ services:
   app:
     container_name: ${CONTAINER_NAME}
     image: ${IMAGE}:${TAG}
+    volumes:
+      - hello:/hello
+
+volumes:
+  hello: {}

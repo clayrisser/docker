@@ -1,12 +1,9 @@
 # File: /Mkpmfile
-# Project: mkpm-docker
-# File Created: 07-10-2021 16:58:49
+# Project: docker
+# File Created: 16-10-2023 06:10:54
 # Author: Clay Risser
 # -----
-# Last Modified: 04-08-2023 15:39:43
-# Modified By: Lalit Rajak
-# -----
-# Risser Labs LLC (c) Copyright 2021
+# BitSpur (c) Copyright 2021 - 2023
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,18 +19,12 @@
 
 include $(MKPM)/mkpm
 include $(MKPM)/gnu
-include main.mk
 
 PACK_DIR := $(MKPM_TMP)/pack
 
 .PHONY: info
 info:
-	@echo DOCKER_FLAVOR: $(DOCKER_FLAVOR)
-	@echo DOCKER: $(DOCKER)
-	@echo DOCKER_COMPOSE: $(DOCKER_COMPOSE)
-	@echo PODMAN: $(PODMAN)
-	@echo PODMAN_COMPOSE: $(PODMAN_COMPOSE)
-	@echo DOCKER_SERVICES: $(DOCKER_SERVICES)
+	@$(MAKE) -s -C docker info
 
 .PHONY: clean
 clean:
@@ -45,8 +36,6 @@ clean:
 purge: clean
 	@$(GIT) clean -fXd
 
-.PHONY: docker-%
-docker-%:
-	@$(MAKE) -s -C docker $(subst docker-,,$@)
-
--include $(call actions)
+.PHONY: docker/%
+docker/%:
+	@$(MAKE) -s -C docker $*

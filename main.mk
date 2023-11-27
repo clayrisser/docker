@@ -1,12 +1,9 @@
 # File: /main.mk
-# Project: mkpm-docker
-# File Created: 07-10-2021 16:58:49
+# Project: docker
+# File Created: 16-10-2023 06:10:54
 # Author: Clay Risser
 # -----
-# Last Modified: 03-08-2023 05:35:42
-# Modified By: Clay Risser
-# -----
-# Risser Labs LLC (c) Copyright 2021
+# BitSpur (c) Copyright 2021 - 2023
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,149 +19,208 @@
 
 export CONTEXT ?= .
 CONTEXT := $(abspath $(CONTEXT))
-export REGISTRY ?=
+export REGISTRY ?= docker.io/library
 export NAME ?= void
 export TAG ?= latest
 export VERSION ?= 0.0.1
 export DOCKERFILE ?= $(CURDIR)/Dockerfile
-export DOCKER_COMPOSE_YAML ?= $(CURDIR)/docker-compose.yaml
-export DOCKER_COMPOSE_VERSION ?= 3.3
+ifneq (,$(wildcard $(CURDIR)/docker-compose.yaml))
+DOCKER_COMPOSE_YAML ?= $(CURDIR)/docker-compose.yaml
+endif
+ifneq (,$(wildcard $(CURDIR)/docker-compose.yml))
+DOCKER_COMPOSE_YAML ?= $(CURDIR)/docker-compose.yml
+endif
+ifneq (,$(wildcard $(CURDIR)/compose.yaml))
+DOCKER_COMPOSE_YAML ?= $(CURDIR)/compose.yaml
+endif
+ifneq (,$(wildcard $(CURDIR)/compose.yml))
+DOCKER_COMPOSE_YAML ?= $(CURDIR)/compose.yml
+endif
+DOCKER_COMPOSE_VERSION ?= 3.3
 export PROJECT_NAME ?= $(NAME)
 ifeq (,$(DOCKER_BUILD_YAML))
 ifneq (,$(wildcard $(CURDIR)/docker-build.yaml))
-export DOCKER_BUILD_YAML ?= $(CURDIR)/docker-build.yaml
+DOCKER_BUILD_YAML ?= $(CURDIR)/docker-build.yaml
+endif
+ifneq (,$(wildcard $(CURDIR)/docker-build.yml))
+DOCKER_BUILD_YAML ?= $(CURDIR)/docker-build.yml
 endif
 endif
-ifeq (,$(REGISTRY))
-	export IMAGE := $(NAME)
-else
-	export IMAGE := $(REGISTRY)/$(NAME)
-endif
-
+_DOCKER_TMP := $(MKPM_TMP)/docker
+export IMAGE := $(REGISTRY)/$(NAME)
 export CONTAINER_NAME ?= $(shell $(ECHO) $(NAME) 2>$(NULL) | $(SED) "s|[\/-]|_|g" $(NOFAIL))
-
-export MAJOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f1 $(NOFAIL))
-ifeq (.,$(shell $(ECHO) $(VERSION) 2>$(NULL) | $(TR) -cd '.' $(NOFAIL)))
+TAG_SEMVER ?= 1
+TAG_SEMVER_MAJOR ?= 1
+TAG_SEMVER_MINOR ?= 1
+TAG_SEMVER_PATCH ?= 1
+TAG_GIT_COMMIT ?= 1
+_DOTS := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(TR) -cd '.' $(NOFAIL))
+ifeq (.,$(_DOTS))
+_VALID_SEMVER := 1
 export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 endif
-ifeq (..,$(shell $(ECHO) $(VERSION) 2>$(NULL) | $(TR) -cd '.' $(NOFAIL)))
+ifeq (..,$(_DOTS))
+_VALID_SEMVER := 1
 export MINOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f2 $(NOFAIL))
 export PATCH := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f3 $(NOFAIL))
 endif
+ifeq (1,$(_VALID_SEMVER))
+export MAJOR := $(shell $(ECHO) $(VERSION) 2>$(NULL) | $(CUT) -d. -f1 $(NOFAIL))
+else
+export MAJOR := $(VERSION)
+endif
+export GIT_COMMIT ?= $(shell $(GIT) describe --tags --always --dirty 2>$(NULL))
 
-export DOCKER_FLAVOR ?= podman
-export PODMAN_COMPOSE_TRANSFORM_POLICY ?= identity
-export YQ := $(call ternary,yq --help | $(GREP) -q '\-o, --output-format string',yq -o json,yq)
+DOCKER_FLAVOR ?= docker
+PODMAN_COMPOSE_TRANSFORM_POLICY ?= identity
+YAML2JSON ?= $(shell $(WHICH) yq 2>&1 >/dev/null && \
+	((yq --version | $(GREP) -q "github.com/mikefarah/yq") && echo 'yq -o json' || echo yq) || \
+	echo 'ruby -ryaml -rjson -e "puts JSON.pretty_generate(YAML.load(ARGF))"')
 
-_DEFAULT_PODMAN_COMPOSE := $(call ternary,podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose --transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose)
+_PODMAN_COMPOSE := $(call ternary,podman-compose \
+	--transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose \
+	--transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose)
+_DOCKER_COMPOSE := $(call ternary,which docker-compose $(NOOUT),docker-compose,docker compose)
 ifeq ($(DOCKER_FLAVOR),docker)
-export DOCKER_COMPOSE ?= $(call ternary,docker -v $(NOOUT) && \
-	docker-compose -v,docker-compose,$(_DEFAULT_PODMAN_COMPOSE))
+DOCKER_COMPOSE ?= $(call ternary,docker -v $(NOOUT) && \
+	$(_DOCKER_COMPOSE) -v,$(_DOCKER_COMPOSE),$(_PODMAN_COMPOSE))
 ifeq ($(findstring podman-compose,$(DOCKER_COMPOSE)),podman-compose)
 DOCKER_COMPOSE := $(call ternary,podman -v $(NOOUT) && \
-	podman-compose -v,$(DOCKER_COMPOSE),docker-compose)
+	podman-compose -v,$(DOCKER_COMPOSE),$(_DOCKER_COMPOSE))
 endif
 else
-export DOCKER_COMPOSE ?= $(call ternary,podman -v $(NOOUT) && \
-	podman-compose -v,$(_DEFAULT_PODMAN_COMPOSE),docker-compose)
+DOCKER_COMPOSE ?= $(call ternary,podman -v $(NOOUT) && \
+	podman-compose -v,$(_PODMAN_COMPOSE),$(_DOCKER_COMPOSE))
 ifeq ($(findstring docker-compose,$(DOCKER_COMPOSE)),docker-compose)
 DOCKER_COMPOSE := $(call ternary,docker -v $(NOOUT) && \
-	docker-compose -v,$(DOCKER_COMPOSE),$(_DEFAULT_PODMAN_COMPOSE))
+	$(_DOCKER_COMPOSE) -v,$(DOCKER_COMPOSE),$(_PODMAN_COMPOSE))
 endif
 endif
+PODMAN_COMPOSE ?= $(_PODMAN_COMPOSE)
+PODMAN ?= podman
+BUILDX ?= $(call ternary,$(DOCKER) buildx $(NOOUT),$(DOCKER) buildx,docker-buildx)
 
-export SYSCTL ?= $(call ternary,sysctl -V,sysctl,$(TRUE))
-export DOCKER_FLAVOR := podman
-ifeq ($(findstring docker-compose,$(DOCKER_COMPOSE)),docker-compose)
-	DOCKER_FLAVOR := docker
-	export DOCKER ?= docker
-	_SUDO_TARGET := $(call ternary,$(DOCKER) ps,,sudo)
-ifneq (,$(_SUDO_TARGET))
+SYSCTL ?= $(call ternary,sysctl -V,sysctl,$(TRUE))
+DOCKER_FLAVOR := docker
+ifeq ($(findstring podman-compose,$(DOCKER_COMPOSE)),podman-compose)
+	DOCKER_FLAVOR := podman
+	DOCKER ?= podman
+	_SYSCTL_TARGET := sysctl
+else
+	DOCKER ?= docker
+ifneq (darwin,$(PLATFORM))
+	_DOCKER_SUDO := $(call ternary,$(DOCKER) ps,,sudo)
+endif
+ifneq (,$(_DOCKER_SUDO))
 	DOCKER := $(SUDO) $(DOCKER)
 	DOCKER_COMPOSE := $(SUDO) $(DOCKER_COMPOSE)
 endif
-else
-	export DOCKER ?= podman
-	_SYSCTL_TARGET := sysctl
-	export PODMAN_COMPOSE ?= $(DOCKER_COMPOSE)
-	export PODMAN ?= $(DOCKER)
 endif
-
-DOCKER_TMP := $(MKPM_TMP)/docker
-
-.PHONY: build
-build: $(DOCKER_TMP)/docker-build.yaml $(CONTEXT)/.dockerignore $(_SUDO_TARGET) $(DOCKER_BUILD_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $< build $(ARGS) main
-	@$(MAKE) -s tag
 
 .PHONY: tag
-tag: $(_SUDO_TARGET) $(DOCKER_TAG_DEPENDENCIES)
+tag: $(_SUDO_TARGET) $(DOCKER_TAG_TARGETS)
+ifeq (1,$(TAG_SEMVER))
+ifeq (1,$(TAG_SEMVER_MAJOR))
 ifneq (,$(MAJOR))
-	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}
+ifneq ($(TAG),$(MAJOR))
+	@$(DOCKER) tag $(IMAGE):$(TAG) $(IMAGE):$(MAJOR)
 endif
+endif
+endif
+ifeq (1,$(TAG_SEMVER_MINOR))
 ifneq (,$(MINOR))
-	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}
+	@$(DOCKER) tag $(IMAGE):$(TAG) $(IMAGE):$(MAJOR).$(MINOR)
 endif
+endif
+ifeq (1,$(TAG_SEMVER_PATCH))
 ifneq (,$(PATCH))
-	@$(DOCKER) tag ${IMAGE}:${TAG} ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
+	@$(DOCKER) tag $(IMAGE):$(TAG) $(IMAGE):$(MAJOR).$(MINOR).$(PATCH)
+endif
+endif
+endif
+ifeq (1,$(TAG_GIT_COMMIT))
+ifneq (,$(GIT_COMMIT))
+	@$(ECHO) $(IMAGE):$(GIT_COMMIT)
+endif
 endif
 
 .PHONY: tags
-tags: $(_SUDO_TARGET) $(DOCKER_TAGS_DEPENDENCIES)
-	@$(ECHO) ${IMAGE}:${TAG}
+tags: $(_SUDO_TARGET) $(DOCKER_TAGS_TARGETS)
+	@$(ECHO) $(IMAGE):$(TAG)
+ifeq (1,$(TAG_SEMVER))
+ifeq (1,$(TAG_SEMVER_MAJOR))
 ifneq (,$(MAJOR))
-	@$(ECHO) ${IMAGE}:${MAJOR}
+ifneq ($(TAG),$(MAJOR))
+	@$(ECHO) $(IMAGE):$(MAJOR)
 endif
+endif
+endif
+ifeq (1,$(TAG_SEMVER_MINOR))
 ifneq (,$(MINOR))
-	@$(ECHO) ${IMAGE}:${MAJOR}.${MINOR}
+	@$(ECHO) $(IMAGE):$(MAJOR).$(MINOR)
 endif
+endif
+ifeq (1,$(TAG_SEMVER_PATCH))
 ifneq (,$(PATCH))
-	@$(ECHO) ${IMAGE}:${MAJOR}.${MINOR}.${PATCH}
+	@$(ECHO) $(IMAGE):$(MAJOR).$(MINOR).$(PATCH)
 endif
+endif
+endif
+ifeq (1,$(TAG_GIT_COMMIT))
+ifneq (,$(GIT_COMMIT))
+	@$(ECHO) $(IMAGE):$(GIT_COMMIT)
+endif
+endif
+
+.PHONY: build
+build: _docker-build-yaml $(CONTEXT)/.dockerignore $(_DOCKER_SUDO) $(DOCKER_BUILD_TARGETS)
+	@$(DOCKER_COMPOSE) -f $(_DOCKER_TMP)/docker-build.yaml build $(_ARGS) $(DOCKER_BUILD_ARGS) main
+	@$(MAKE) -s tag
 
 .PHONY: pull
-pull: $(DOCKER_TMP)/docker-build.yaml $(_SUDO_TARGET) $(DOCKER_PULL_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $< pull $(ARGS)
+pull: _docker-build-yaml $(_SUDO_TARGET) $(DOCKER_PULL_TARGETS)
+	@$(DOCKER_COMPOSE) -f $(_DOCKER_TMP)/docker-build.yaml pull $(_ARGS) $(DOCKER_PULL_ARGS)
 
 .PHONY: push
-push: $(DOCKER_TMP)/docker-build.yaml $(DOCKER_PUSH_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $< push $(ARGS)
+push: _docker-build-yaml $(_SUDO_TARGET) $(DOCKER_PUSH_TARGETS)
+	@$(DOCKER_COMPOSE) -f $(_DOCKER_TMP)/docker-build.yaml push $(_ARGS) $(DOCKER_PUSH_ARGS)
 
 .PHONY: shell
-shell: $(_SUDO_TARGET) $(DOCKER_SHELL_DEPENDENCIES)
+shell: $(_SUDO_TARGET) $(DOCKER_SHELL_TARGETS)
 	@($(DOCKER) ps | $(GREP) -E "$(NAME)$$" $(NOOUT)) && \
 		$(DOCKER) exec -it $(NAME) /bin/sh || \
 		$(DOCKER) run --rm -it --entrypoint /bin/sh $(IMAGE):$(TAG)
 
 .PHONY: logs
-logs: $(_SUDO_TARGET) $(DOCKER_LOGS_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) logs -f $(ARGS)
+logs: $(_SUDO_TARGET) $(DOCKER_LOGS_TARGETS)
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) logs -f $(_ARGS) $(DOCKER_LOGS_ARGS)
 
-.PHONY: up ~up
-~up: $(_SUDO_TARGET) $(_SYSCTL_TARGET)
-	@$(MAKE) -s up ARGS="-d $(ARGS)"
-up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_DEPENDENCIES) $(DOCKER_RUNTIME_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) up $(ARGS)
+.PHONY: up
+up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_TARGETS) $(DOCKER_RUNTIME_TARGETS)
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) up $(_ARGS) $(DOCKER_UP_ARGS)
 
-.PHONY: run ~run
-~run:
-	@$(MAKE) -s run ARGS="-d $(ARGS)"
-run: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_RUN_DEPENDENCIES) $(DOCKER_RUNTIME_DEPENDENCIES)
-	@$(DOCKER) run --rm -it ${IMAGE}:${TAG} $(ARGS)
+.PHONY: run
+run: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_RUN_TARGETS) $(DOCKER_RUNTIME_TARGETS)
+	@$(DOCKER) run --rm -it $(IMAGE):$(TAG) $(_ARGS) $(DOCKER_RUN_ARGS)
 
 .PHONY: stop
-stop: $(_SUDO_TARGET) $(DOCKER_STOP_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) stop $(ARGS)
+stop: $(_SUDO_TARGET) $(DOCKER_STOP_TARGETS)
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) stop $(_ARGS) $(DOCKER_STOP_ARGS)
 
 .PHONY: down
-down: $(_SUDO_TARGET) $(DOCKER_DOWN_DEPENDENCIES)
+down: $(_SUDO_TARGET) $(DOCKER_DOWN_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
-	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down -v --remove-orphans
+	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
 else
-	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down
-endif
-	-@$(DOCKER) volume prune -f
+	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down $(_ARGS) $(DOCKER_DOWN_ARGS)
 	-@$(DOCKER) network prune -f
+	-@$(DOCKER) volume prune -f
+endif
+
+BAKE_ARGS ?= --provenance false --load
+.PHONY: bake
+bake:
+	@$(BUILDX) bake $(BAKE_ARGS)
 
 ifneq (,$(wildcard $(CURDIR)/sysctl.list))
 SYSCTL_LIST := $(shell [ "$(shell $(CAT) $(CURDIR)/sysctl.list | \
@@ -189,8 +245,7 @@ else
 $(CONTEXT)/.dockerignore: ;
 endif
 
-ifneq (,$(PATCH))
-define _DOCKER_BUILD_YAML
+define _DOCKER_BUILD_YAML_BASE
 version: '$(DOCKER_COMPOSE_VERSION)'
 services:
   main:
@@ -198,93 +253,82 @@ services:
     build:
       context: $${CONTEXT}
       dockerfile: $${DOCKERFILE}
-  major:
-    image: $${IMAGE}:$${MAJOR}
-    build:
-      context: $${CONTEXT}
-      dockerfile: $${DOCKERFILE}
-  minor:
-    image: $${IMAGE}:$${MAJOR}.$${MINOR}
-    build:
-      context: $${CONTEXT}
-      dockerfile: $${DOCKERFILE}
+endef
+ifeq (1,$(TAG_SEMVER))
+ifeq (1,$(TAG_SEMVER_PATCH))
+ifneq (,$(PATCH))
+define _DOCKER_BUILD_YAML_PATCH
   patch:
     image: $${IMAGE}:$${MAJOR}.$${MINOR}.$${PATCH}
     build:
       context: $${CONTEXT}
       dockerfile: $${DOCKERFILE}
 endef
-else
+endif
+endif
+ifeq (1,$(TAG_SEMVER_MINOR))
 ifneq (,$(MINOR))
-define _DOCKER_BUILD_YAML
-version: '$(DOCKER_COMPOSE_VERSION)'
-services:
-  main:
-    image: $${IMAGE}:$${TAG}
-    build:
-      context: $${CONTEXT}
-      dockerfile: $${DOCKERFILE}
-  major:
-    image: $${IMAGE}:$${MAJOR}
-    build:
-      context: $${CONTEXT}
-      dockerfile: $${DOCKERFILE}
+define _DOCKER_BUILD_YAML_MINOR
   minor:
     image: $${IMAGE}:$${MAJOR}.$${MINOR}
     build:
       context: $${CONTEXT}
       dockerfile: $${DOCKERFILE}
 endef
-else
+endif
+endif
+ifeq (1,$(TAG_SEMVER_MAJOR))
 ifneq (,$(MAJOR))
-define _DOCKER_BUILD_YAML
-version: '$(DOCKER_COMPOSE_VERSION)'
-services:
-  main:
-    image: $${IMAGE}:$${TAG}
-    build:
-      context: $${CONTEXT}
-      dockerfile: $${DOCKERFILE}
+define _DOCKER_BUILD_YAML_MAJOR
   major:
     image: $${IMAGE}:$${MAJOR}
     build:
       context: $${CONTEXT}
       dockerfile: $${DOCKERFILE}
 endef
-else
-define _DOCKER_BUILD_YAML
-version: '$(DOCKER_COMPOSE_VERSION)'
-services:
-  main:
-    image: $${IMAGE}:$${TAG}
+endif
+endif
+endif
+ifeq (1,$(TAG_GIT_COMMIT))
+ifneq (,$(GIT_COMMIT))
+define _DOCKER_BUILD_YAML_GIT_COMMIT
+  git-commit:
+    image: $${IMAGE}:$${GIT_COMMIT}
     build:
       context: $${CONTEXT}
       dockerfile: $${DOCKERFILE}
 endef
 endif
 endif
-endif
+define _DOCKER_BUILD_YAML
+$(_DOCKER_BUILD_YAML_BASE)
+$(_DOCKER_BUILD_YAML_PATCH)
+$(_DOCKER_BUILD_YAML_MINOR)
+$(_DOCKER_BUILD_YAML_MAJOR)
+$(_DOCKER_BUILD_YAML_GIT_COMMIT)
+endef
 export _DOCKER_BUILD_YAML
 
-$(DOCKER_TMP)/docker-build.yaml: $(DOCKER_BUILD_YAML)
-	@$(MKDIR) -p $(@D)
-ifneq (,$(wildcard $(DOCKER_BUILD_YAML)))
-	@$(CP) $(DOCKER_BUILD_YAML) $@
+.PHONY: _docker-build-yaml
+_docker-build-yaml:
+	@$(MKDIR) -p $(_DOCKER_TMP)
+ifeq (,$(wildcard $(DOCKER_BUILD_YAML)))
+	@$(ECHO) "$$_DOCKER_BUILD_YAML" > $(_DOCKER_TMP)/docker-build.yaml
 else
-	@$(ECHO) "$$_DOCKER_BUILD_YAML" > $@
+	@$(CP) $(DOCKER_BUILD_YAML) $(_DOCKER_TMP)/docker-build.yaml
 endif
 
-export DOCKER_SERVICES :=
+DOCKER_SERVICES :=
 ifneq (,$(wildcard $(DOCKER_COMPOSE_YAML)))
 ifneq ($(AUTOCALCULATE_DOCKER_SERVICES),0)
-DOCKER_SERVICES := $(shell $(CAT) $(DOCKER_COMPOSE_YAML) | $(YQ) | \
+DOCKER_SERVICES := $(shell $(CAT) $(DOCKER_COMPOSE_YAML) | $(YAML2JSON) | \
 	$(JQ) '.services' | $(JQ) -r 'keys[] | select (.!=null)' $(NOFAIL))
 .PHONY: $(DOCKER_SERVICES)
-$(DOCKER_SERVICES): $(DOCKER_RUNTIME_DEPENDENCIES)
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) up $(ARGS) $@
+$(DOCKER_SERVICES): $(DOCKER_RUNTIME_TARGETS)
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) up $(_ARGS) $(DOCKER_UP_ARGS) $@
 endif
 endif
 
 .PHONY: %-d
 %-d:
-	@$(MAKE) -s $(subst -d,,$@) ARGS="-d"
+	@$(MAKE) -s $* _ARGS="-d"

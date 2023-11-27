@@ -1,0 +1,9 @@
+bitspur
+cloc
+gnumake
+gnused
+makefiles
+mkpm
+nixpkgs
+risser
+stdenv

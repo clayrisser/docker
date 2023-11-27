@@ -1,12 +1,9 @@
 # File: /Makefile
 # Project: docker
-# File Created: 03-08-2023 05:26:46
+# File Created: 16-10-2023 06:10:54
 # Author: Clay Risser
 # -----
-# Last Modified: 03-08-2023 05:30:19
-# Modified By: Clay Risser
-# -----
-# Risser Labs LLC (c) Copyright 2021 - 2023
+# BitSpur (c) Copyright 2021 - 2023
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
