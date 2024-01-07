@@ -331,4 +331,8 @@ endif
 
 .PHONY: %-d
 %-d:
+ifeq (,$(wildcard Mkpmfile))
 	@$(MAKE) -s $* _ARGS="-d"
+else
+	@$(MKPM_MAKE) $* _ARGS="-d"
+endif
