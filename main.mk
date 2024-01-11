@@ -175,7 +175,11 @@ endif
 .PHONY: build
 build: _docker-build-yaml $(CONTEXT)/.dockerignore $(_DOCKER_SUDO) $(DOCKER_BUILD_TARGETS)
 	@$(DOCKER_COMPOSE) -f $(_DOCKER_TMP)/docker-build.yaml build $(_ARGS) $(DOCKER_BUILD_ARGS) main
+ifeq (,$(wildcard Mkpmfile))
 	@$(MAKE) -s tag
+else
+	@$(MKPM_MAKE) tag
+endif
 
 .PHONY: pull
 pull: _docker-build-yaml $(_SUDO_TARGET) $(DOCKER_PULL_TARGETS)
