@@ -19,6 +19,7 @@
 
 export CONTEXT ?= .
 CONTEXT := $(abspath $(CONTEXT))
+NODE ?= node
 export REGISTRY ?= docker.io/library
 export NAME ?= void
 export TAG ?= latest
