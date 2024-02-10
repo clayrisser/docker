@@ -124,23 +124,27 @@ ifeq (1,$(TAG_SEMVER_MAJOR))
 ifneq (,$(MAJOR))
 ifneq ($(TAG),$(MAJOR))
 	@$(DOCKER) tag $(IMAGE):$(TAG) $(IMAGE):$(MAJOR)
+	@$(ECHO) tagged $(IMAGE):$(MAJOR)
 endif
 endif
 endif
 ifeq (1,$(TAG_SEMVER_MINOR))
 ifneq (,$(MINOR))
 	@$(DOCKER) tag $(IMAGE):$(TAG) $(IMAGE):$(MAJOR).$(MINOR)
+	@$(ECHO) tagged $(IMAGE):$(MAJOR).$(MINOR)
 endif
 endif
 ifeq (1,$(TAG_SEMVER_PATCH))
 ifneq (,$(PATCH))
 	@$(DOCKER) tag $(IMAGE):$(TAG) $(IMAGE):$(MAJOR).$(MINOR).$(PATCH)
+	@$(ECHO) tagged $(IMAGE):$(MAJOR).$(MINOR).$(PATCH)
 endif
 endif
 endif
 ifeq (1,$(TAG_GIT_COMMIT))
 ifneq (,$(GIT_COMMIT))
-	@$(ECHO) $(IMAGE):$(GIT_COMMIT)
+	@$(DOCKER) tag $(IMAGE):$(TAG) $(IMAGE):$(GIT_COMMIT)
+	@$(ECHO) tagged $(IMAGE):$(GIT_COMMIT)
 endif
 endif
 
