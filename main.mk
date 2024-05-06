@@ -81,20 +81,10 @@ _PODMAN_COMPOSE := $(call ternary,podman-compose \
 	--transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose \
 	--transform_policy=$(PODMAN_COMPOSE_TRANSFORM_POLICY),podman-compose)
 _DOCKER_COMPOSE := $(call ternary,which docker-compose $(NOOUT),docker-compose,docker compose)
-ifeq ($(DOCKER_FLAVOR),docker)
-DOCKER_COMPOSE ?= $(call ternary,docker -v $(NOOUT) && \
-	$(_DOCKER_COMPOSE) -v,$(_DOCKER_COMPOSE),$(_PODMAN_COMPOSE))
-ifeq ($(findstring podman-compose,$(DOCKER_COMPOSE)),podman-compose)
-DOCKER_COMPOSE := $(call ternary,podman -v $(NOOUT) && \
-	podman-compose -v,$(DOCKER_COMPOSE),$(_DOCKER_COMPOSE))
-endif
+ifeq ($(DOCKER_FLAVOR),podman)
+DOCKER_COMPOSE ?= $(_PODMAN_COMPOSE)
 else
-DOCKER_COMPOSE ?= $(call ternary,podman -v $(NOOUT) && \
-	podman-compose -v,$(_PODMAN_COMPOSE),$(_DOCKER_COMPOSE))
-ifeq ($(findstring docker-compose,$(DOCKER_COMPOSE)),docker-compose)
-DOCKER_COMPOSE := $(call ternary,docker -v $(NOOUT) && \
-	$(_DOCKER_COMPOSE) -v,$(DOCKER_COMPOSE),$(_PODMAN_COMPOSE))
-endif
+DOCKER_COMPOSE ?= $(_DOCKER_COMPOSE)
 endif
 PODMAN_COMPOSE ?= $(_PODMAN_COMPOSE)
 PODMAN ?= podman
