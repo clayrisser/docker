@@ -36,7 +36,6 @@ endif
 ifneq (,$(wildcard $(CURDIR)/compose.yml))
 DOCKER_COMPOSE_YAML ?= $(CURDIR)/compose.yml
 endif
-DOCKER_COMPOSE_VERSION ?= 3.3
 export PROJECT_NAME ?= $(NAME)
 ifeq (,$(DOCKER_BUILD_YAML))
 ifneq (,$(wildcard $(CURDIR)/docker-build.yaml))
@@ -244,7 +243,6 @@ $(CONTEXT)/.dockerignore: ;
 endif
 
 define _DOCKER_BUILD_YAML_BASE
-version: '$(DOCKER_COMPOSE_VERSION)'
 services:
   main:
     image: $${IMAGE}:$${TAG}
