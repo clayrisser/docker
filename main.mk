@@ -216,7 +216,7 @@ endif
 
 BAKE_ARGS ?= --provenance false --load
 .PHONY: bake
-bake:
+bake: $(CONTEXT)/.dockerignore
 	@$(BUILDX) bake $(BAKE_ARGS)
 
 ifneq (,$(wildcard $(CURDIR)/sysctl.list))
