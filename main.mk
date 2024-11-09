@@ -215,9 +215,11 @@ else
 endif
 
 BAKE_ARGS ?= --provenance false --load
-.PHONY: bake
+.PHONY: bake bake/%
 bake: $(CONTEXT)/.dockerignore
 	@$(BUILDX) bake $(BAKE_ARGS)
+bake/%:
+	@$(BUILDX) bake $(BAKE_ARGS) $*
 
 ifneq (,$(wildcard $(CURDIR)/sysctl.list))
 SYSCTL_LIST := $(shell [ "$(shell $(CAT) $(CURDIR)/sysctl.list | \
