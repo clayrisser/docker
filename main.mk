@@ -214,7 +214,7 @@ else
 	-@$(DOCKER) volume prune -f
 endif
 
-BAKE_ARGS ?= --provenance false --load
+BAKE_ARGS ?= --provenance false
 .PHONY: bake bake/%
 bake: $(CONTEXT)/.dockerignore
 	@$(BUILDX) bake $(BAKE_ARGS)
