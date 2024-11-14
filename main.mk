@@ -217,15 +217,8 @@ endif
 BAKE_ARGS ?= --pull --push --provenance=false
 .PHONY: bake bake/%
 bake: $(CONTEXT)/.dockerignore
-	@$(DOCKER) buildx bake --print 2>/dev/null | $(JQ) -r \
-		'. as $$root | .target | to_entries[] | select(.value["cache-from"] != null) | {key: .key, tags: .value["cache-from"][0]} | "\(.key)\t\(.tags)"' | \
-		$(AWK) -F'\t' '{ printf "  %s:\n    image: %s\n", $$1, $$2 }' | \
-		($(ECHO) "services:" && $(CAT)) | $(DOCKER_COMPOSE) -f- pull
 	@$(BUILDX) bake $(BAKE_ARGS)
 bake/%:
-	@if [ -n "$(shell $(DOCKER) buildx bake --print 2>/dev/null | $(JQ) -r '.target["$*"]["cache-from"][0] // empty')" ]; then \
-		$(DOCKER) buildx bake --print 2>/dev/null | $(JQ) -r '.target["$*"]["cache-from"][0]' | $(XARGS) $(DOCKER) pull; \
-	fi
 	@$(BUILDX) bake $(BAKE_ARGS) $*
 
 ifneq (,$(wildcard $(CURDIR)/sysctl.list))
