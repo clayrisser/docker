@@ -215,9 +215,6 @@ else
 endif
 
 BAKE_ARGS ?= --pull --push --provenance=false
-ifneq (,$(CI))
-BAKE_ARGS += --progress=plain
-endif
 .PHONY: bake bake/%
 bake: $(CONTEXT)/.dockerignore
 	@$(BUILDX) bake $(BAKE_ARGS)
