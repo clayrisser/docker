@@ -214,12 +214,14 @@ else
 	-@$(DOCKER) volume prune -f
 endif
 
-BAKE_ARGS ?= --allow=fs.read=.. --pull --provenance=false
+ifeq (registry,$(BAKE_OUTPUT))
+BAKE_ARGS += --set '*.platform=linux/amd64,linux/arm64' --push
+endif
 .PHONY: bake bake/%
 bake: $(CONTEXT)/.dockerignore
-	@$(BUILDX) bake $(BAKE_ARGS)
+	@$(BUILDX) bake --pull --provenance=false --allow=fs.read=.. $(BAKE_ARGS)
 bake/%:
-	@$(BUILDX) bake $(BAKE_ARGS) $*
+	@$(BUILDX) bake --pull --provenance=false --allow=fs.read=.. $(BAKE_ARGS) $*
 
 ifneq (,$(wildcard $(CURDIR)/sysctl.list))
 SYSCTL_LIST := $(shell [ "$(shell $(CAT) $(CURDIR)/sysctl.list | \
