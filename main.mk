@@ -105,6 +105,9 @@ ifneq (,$(_DOCKER_SUDO))
 	DOCKER_COMPOSE := $(SUDO) $(DOCKER_COMPOSE)
 endif
 endif
+ifneq (,$(wildcard $(realpath $(DOTENV))))
+	DOCKER_COMPOSE := $(DOCKER_COMPOSE) --env-file "$(realpath $(DOTENV))"
+endif
 
 .PHONY: tag
 tag: $(_SUDO_TARGET) $(DOCKER_TAG_TARGETS)
