@@ -198,20 +198,30 @@ up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_TARGETS) $(DOCKER_RUNTIME_TARG
 up/%: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_TARGETS) $(DOCKER_RUNTIME_TARGETS)
 	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) up $(_ARGS) $(DOCKER_UP_ARGS)
 up-d/%: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_TARGETS) $(DOCKER_RUNTIME_TARGETS)
+ifeq ($(DOCKER_FLAVOR),docker)
 	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) up -d $(_ARGS) $(DOCKER_UP_ARGS)
+else
+	@echo profiles not supported for $(DOCKER_FLAVOR)
+endif
 
 .PHONY: run
 run: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_RUN_TARGETS) $(DOCKER_RUNTIME_TARGETS)
 	@$(DOCKER) run --rm -it $(IMAGE):$(TAG) $(_ARGS) $(DOCKER_RUN_ARGS)
 
-.PHONY: stop
+.PHONY: stop stop/%
 stop: $(_SUDO_TARGET) $(DOCKER_STOP_TARGETS)
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) stop $(_ARGS) $(DOCKER_STOP_ARGS)
+stop/%: $(_SUDO_TARGET) $(DOCKER_STOP_TARGETS)
+ifeq ($(DOCKER_FLAVOR),docker)
+	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) stop $(_ARGS) $(DOCKER_STOP_ARGS)
+else
+	@echo profiles not supported for $(DOCKER_FLAVOR)
+endif
 
 .PHONY: down down/%
 down: $(_SUDO_TARGET) $(DOCKER_DOWN_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
-	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
+	-@$(DOCKER_COMPOSE) --profile main -f $(DOCKER_COMPOSE_YAML) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
 else
 	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down $(_ARGS) $(DOCKER_DOWN_ARGS)
 	-@$(DOCKER) network prune -f
@@ -221,7 +231,7 @@ down/%:
 ifeq ($(DOCKER_FLAVOR),docker)
 	-@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
 else
-	-@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) down $(_ARGS) $(DOCKER_DOWN_ARGS)
+	-@echo profiles not supported for $(DOCKER_FLAVOR)
 endif
 
 ifeq (registry,$(BAKE_OUTPUT))
