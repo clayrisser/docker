@@ -203,6 +203,8 @@ up/%: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_TARGETS) $(DOCKER_RUNTIME_TA
 ifeq ($(DOCKER_FLAVOR),docker)
 	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) up $(_ARGS) $(DOCKER_UP_ARGS)
 else
+	@echo profiles not supported for $(DOCKER_FLAVOR)
+endif
 up-d/%: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_TARGETS) $(DOCKER_RUNTIME_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
 	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) up -d $(_ARGS) $(DOCKER_UP_ARGS)
