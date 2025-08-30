@@ -192,9 +192,9 @@ shell: $(_SUDO_TARGET) $(DOCKER_SHELL_TARGETS)
 		$(DOCKER) run --rm -it --entrypoint /bin/sh $(IMAGE):$(TAG)
 shell/%: $(_SUDO_TARGET) $(DOCKER_SHELL_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
-	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) exec -it $(NAME) /bin/sh
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) exec -it $* /bin/sh
 else
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) exec -it $(NAME) /bin/sh
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) exec -it $* /bin/sh
 endif
 
 .PHONY: logs logs/%
@@ -208,7 +208,7 @@ logs/%: $(_SUDO_TARGET) $(DOCKER_LOGS_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
 	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) logs -f $(_ARGS) $(DOCKER_LOGS_ARGS)
 else
-	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) logs -f $(_ARGS) $(DOCKER_LOGS_ARGS)
+	@echo profiles not supported for $(DOCKER_FLAVOR)
 endif
 
 .PHONY: up up/% up-d/%
@@ -245,6 +245,20 @@ endif
 stop/%: $(_SUDO_TARGET) $(DOCKER_STOP_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
 	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) stop $(_ARGS) $(DOCKER_STOP_ARGS)
+else
+	@echo profiles not supported for $(DOCKER_FLAVOR)
+endif
+
+.PHONY: restart restart/%
+restart: $(_SUDO_TARGET) $(DOCKER_RESTART_TARGETS)
+ifeq ($(DOCKER_FLAVOR),docker)
+	@$(DOCKER_COMPOSE) --profile main -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) restart $(_ARGS) $(DOCKER_RESTART_ARGS)
+else
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) restart $(_ARGS) $(DOCKER_RESTART_ARGS)
+endif
+restart/%: $(_SUDO_TARGET) $(DOCKER_RESTART_TARGETS)
+ifeq ($(DOCKER_FLAVOR),docker)
+	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) restart $(_ARGS) $(DOCKER_RESTART_ARGS)
 else
 	@echo profiles not supported for $(DOCKER_FLAVOR)
 endif

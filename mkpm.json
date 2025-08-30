@@ -1,6 +1,6 @@
 {
 	"name": "docker",
-	"version": "0.4.5",
+	"version": "0.4.6",
 	"description": "build docker images using make",
 	"author": "Clay Risser <clayrisser@gmail.com>",
 	"repo": "git@gitlab.com:bitspur/mkpm/packages.git",
