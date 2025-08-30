@@ -190,10 +190,26 @@ shell: $(_SUDO_TARGET) $(DOCKER_SHELL_TARGETS)
 	@($(DOCKER) ps | $(GREP) -E "$(NAME)$$" $(NOOUT)) && \
 		$(DOCKER) exec -it $(NAME) /bin/sh || \
 		$(DOCKER) run --rm -it --entrypoint /bin/sh $(IMAGE):$(TAG)
+shell/%: $(_SUDO_TARGET) $(DOCKER_SHELL_TARGETS)
+ifeq ($(DOCKER_FLAVOR),docker)
+	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) exec -it $(NAME) /bin/sh
+else
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) exec -it $(NAME) /bin/sh
+endif
 
-.PHONY: logs
+.PHONY: logs logs/%
 logs: $(_SUDO_TARGET) $(DOCKER_LOGS_TARGETS)
+ifeq ($(DOCKER_FLAVOR),docker)
+	@$(DOCKER_COMPOSE) --profile main -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) logs -f $(_ARGS) $(DOCKER_LOGS_ARGS)
+else
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) logs -f $(_ARGS) $(DOCKER_LOGS_ARGS)
+endif
+logs/%: $(_SUDO_TARGET) $(DOCKER_LOGS_TARGETS)
+ifeq ($(DOCKER_FLAVOR),docker)
+	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) logs -f $(_ARGS) $(DOCKER_LOGS_ARGS)
+else
+	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) logs -f $(_ARGS) $(DOCKER_LOGS_ARGS)
+endif
 
 .PHONY: up up/% up-d/%
 up: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_UP_TARGETS) $(DOCKER_RUNTIME_TARGETS)
@@ -222,13 +238,13 @@ run: $(_SUDO_TARGET) $(_SYSCTL_TARGET) $(DOCKER_RUN_TARGETS) $(DOCKER_RUNTIME_TA
 .PHONY: stop stop/%
 stop: $(_SUDO_TARGET) $(DOCKER_STOP_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
-	@$(DOCKER_COMPOSE) --profile main -f $(DOCKER_COMPOSE_YAML) stop $(_ARGS) $(DOCKER_STOP_ARGS)
+	@$(DOCKER_COMPOSE) --profile main -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) stop $(_ARGS) $(DOCKER_STOP_ARGS)
 else
 	@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) stop $(_ARGS) $(DOCKER_STOP_ARGS)
 endif
 stop/%: $(_SUDO_TARGET) $(DOCKER_STOP_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
-	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) stop $(_ARGS) $(DOCKER_STOP_ARGS)
+	@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) stop $(_ARGS) $(DOCKER_STOP_ARGS)
 else
 	@echo profiles not supported for $(DOCKER_FLAVOR)
 endif
@@ -236,7 +252,7 @@ endif
 .PHONY: down down/%
 down: $(_SUDO_TARGET) $(DOCKER_DOWN_TARGETS)
 ifeq ($(DOCKER_FLAVOR),docker)
-	-@$(DOCKER_COMPOSE) --profile main -f $(DOCKER_COMPOSE_YAML) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
+	-@$(DOCKER_COMPOSE) --profile main -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
 else
 	-@$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_YAML) down $(_ARGS) $(DOCKER_DOWN_ARGS)
 	-@$(DOCKER) network prune -f
@@ -244,7 +260,7 @@ else
 endif
 down/%:
 ifeq ($(DOCKER_FLAVOR),docker)
-	-@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
+	-@$(DOCKER_COMPOSE) --profile $* -f $(DOCKER_COMPOSE_YAML) -p $(PROJECT_NAME) down --volumes --remove-orphans $(_ARGS) $(DOCKER_DOWN_ARGS)
 else
 	-@echo profiles not supported for $(DOCKER_FLAVOR)
 endif
