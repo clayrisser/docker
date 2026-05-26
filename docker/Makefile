@@ -1,54 +1,73 @@
-# File: /docker/Makefile
-# Project: docker
-# File Created: 16-10-2023 06:10:54
-# Author: Clay Risser
-# -----
-# BitSpur (c) Copyright 2021 - 2023
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+.POSIX:
+ROOTDIR ?= $(eval ROOTDIR := $(shell git rev-parse --show-toplevel))$(ROOTDIR)
+include $(ROOTDIR)/make.mk
 
-include $(MKPM)/mkpm
-include $(MKPM)/gnu
+.DEFAULT_GOAL := bake
 
-export NAME := mkpm-docker
-export VERSION := 0.0.1
-export CONTEXT := context
+# bake-block: target-specific variables go right above the target
+BAKE_OUTPUT ?= docker
+BAKE_ARGS ?= -f $(ROOTDIR)/docker/docker-bake.hcl --pull --provenance=false --allow=fs.read=..
+ifeq (registry,$(BAKE_OUTPUT))
+BAKE_ARGS += --set '*.platform=linux/amd64,linux/arm64' --push
+else
+BAKE_ARGS += --load
+endif
 
-include ../main.mk
+.PHONY: bake bake/%
+bake: $(ROOTDIR)/.dockerignore
+	@[ "$(BAKE_OUTPUT)" != registry ] || case "$(GIT_COMMIT)" in *-dirty) echo "refusing to push from dirty tree (GIT_COMMIT=$(GIT_COMMIT)) — commit first" >&2; exit 1;; esac
+	@$(BUILDX) bake $(BAKE_ARGS)
+bake/%: $(ROOTDIR)/.dockerignore
+	@[ "$(BAKE_OUTPUT)" != registry ] || case "$(GIT_COMMIT)" in *-dirty) echo "refusing to push from dirty tree (GIT_COMMIT=$(GIT_COMMIT)) — commit first" >&2; exit 1;; esac
+	@$(BUILDX) bake $(BAKE_ARGS) $*
+
+# compose lives at docker/compose.yaml; -p pins the project name so containers
+# don't drift across cwd-based defaults.
+COMPOSE_FILE := $(ROOTDIR)/docker/compose.yaml
+COMPOSE_PROJECT := $(DOCKER_NAME)
+
+.PHONY: up up/% down down/% logs logs/% ps ps/% shell
+up:
+	@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d --wait
+up/%:
+	@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) --profile $* up -d --wait
+down:
+	-@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) down --volumes --remove-orphans
+down/%:
+	-@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) --profile $* down --volumes --remove-orphans
+logs:
+	@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) logs -f
+logs/%:
+	@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) --profile $* logs -f
+ps:
+	@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) ps
+ps/%:
+	@$(COMPOSE) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) --profile $* ps
+
+# Ad-hoc shell into the built image, no compose service required.
+shell:
+	@docker run --rm -it --entrypoint /bin/sh $(IMAGE):$(DOCKER_TAG)
+
+# Apply kernel sysctl tunables listed in sysctl.list (host-level; needs sudo).
+ifneq (,$(wildcard $(ROOTDIR)/docker/sysctl.list))
+.PHONY: sysctl
+sysctl:
+	@while IFS='' read -r line || [ -n "$$line" ]; do \
+		case "$$line" in ''|\#*) continue;; esac; \
+		$(SUDO) sysctl -w "$$line"; \
+	done < $(ROOTDIR)/docker/sysctl.list
+endif
 
 .PHONY: info
 info:
-	@echo YAML2JSON: $(YAML2JSON)
-	@echo DOCKER_FLAVOR: $(DOCKER_FLAVOR)
 	@echo BUILDX: $(BUILDX)
-	@echo DOCKER: $(DOCKER)
-	@echo DOCKER_COMPOSE: $(DOCKER_COMPOSE)
-	@echo PODMAN: $(PODMAN)
-	@echo PODMAN_COMPOSE: $(PODMAN_COMPOSE)
-	@echo DOCKER_SERVICES: $(DOCKER_SERVICES)
-	@echo DOCKER_BUILD_YAML: $(DOCKER_BUILD_YAML)
-	@echo DOCKER_COMPOSE_YAML: $(DOCKER_COMPOSE_YAML)
-	@echo DOCKER_COMPOSE_VERSION: $(DOCKER_COMPOSE_VERSION)
-	@echo DOCKERFILE: $(DOCKERFILE)
-	@echo CONTEXT: $(CONTEXT)
-	@echo REGISTRY: $(REGISTRY)
-	@echo NAME: $(NAME)
-	@echo TAG: $(TAG)
-	@echo VERSION: $(VERSION)
+	@echo COMPOSE: $(COMPOSE)
 	@echo IMAGE: $(IMAGE)
-	@echo CONTAINER_NAME: $(CONTAINER_NAME)
-	@echo PROJECT_NAME: $(PROJECT_NAME)
-	@echo MAJOR: $(MAJOR)
-	@echo MINOR: $(MINOR)
-	@echo PATCH: $(PATCH)
+	@echo DOCKER_REGISTRY: $(DOCKER_REGISTRY)
+	@echo DOCKER_NAME: $(DOCKER_NAME)
+	@echo DOCKER_TAG: $(DOCKER_TAG)
 	@echo GIT_COMMIT: $(GIT_COMMIT)
+	@echo BAKE_OUTPUT: $(BAKE_OUTPUT)
+	@echo BAKE_ARGS: $(BAKE_ARGS)
+	@echo COMPOSE_FILE: $(COMPOSE_FILE)
+	@echo COMPOSE_PROJECT: $(COMPOSE_PROJECT)

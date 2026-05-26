@@ -1,9 +1,6 @@
-version: "3.3"
-
 services:
   app:
-    container_name: ${CONTAINER_NAME}
-    image: ${IMAGE}:${TAG}
+    image: ${DOCKER_REGISTRY:-docker.io/library}/${DOCKER_NAME:-mkpm-docker}:${DOCKER_TAG:-latest}
     volumes:
       - hello:/hello
 

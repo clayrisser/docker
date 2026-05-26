@@ -1,37 +1,23 @@
-variable "IMAGE" {
-  default = ""
+variable "BAKE_OUTPUT" {}
+variable "DOCKER_REGISTRY" {}
+variable "DOCKER_NAME" {}
+variable "DOCKER_TAG" {}
+variable "GIT_COMMIT" {}
+
+group "default" {
+  targets = ["mkpm-docker"]
 }
 
-variable "TAG" {
-  default = ""
+target "_common" {
+  context = ".."
+  output  = ["type=${BAKE_OUTPUT}"]
 }
 
-variable "MAJOR" {
-  default = ""
-}
-
-variable "MINOR" {
-  default = ""
-}
-
-variable "PATCH" {
-  default = ""
-}
-
-variable "GIT_COMMIT" {
-  default = ""
-}
-
-target "default" {
-  context    = ".."
+target "mkpm-docker" {
+  inherits   = ["_common"]
   dockerfile = "docker/Dockerfile"
-  platforms  = ["linux/amd64"]
-  output     = ["type=docker"]
   tags = [
-    "${IMAGE}:${TAG}",
-    "${IMAGE}:${MAJOR}",
-    "${IMAGE}:${MINOR}",
-    "${IMAGE}:${PATCH}",
-    "${IMAGE}:${GIT_COMMIT}"
+    "${DOCKER_REGISTRY}/${DOCKER_NAME}:${DOCKER_TAG}",
+    "${DOCKER_REGISTRY}/${DOCKER_NAME}:${GIT_COMMIT}",
   ]
 }

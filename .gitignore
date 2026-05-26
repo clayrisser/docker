@@ -1,4 +1,7 @@
 .dockerignore
+.env
+.env.bak
+.make/
 
 # mkpm
 /*.tar.gz
